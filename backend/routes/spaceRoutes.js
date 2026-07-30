@@ -1,8 +1,32 @@
 import express from "express";
 import Space from "../models/Space.js";
+import Booking from "../models/Booking.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
+
+// Attaches `availableNow` / `bookedUntil` to each space, based on whether
+// there's a confirmed booking covering the current moment today.
+const attachAvailability = async (spaces) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date().toTimeString().slice(0, 5); // "HH:MM" in server-local time
+
+  const activeBookings = await Booking.find({
+    date: today,
+    status: "confirmed",
+    startTime: { $lte: now },
+    endTime: { $gt: now },
+  }).select("space endTime");
+
+  const bookedUntilBySpace = new Map();
+  activeBookings.forEach((b) => bookedUntilBySpace.set(b.space.toString(), b.endTime));
+
+  return spaces.map((space) => {
+    const plain = space.toObject ? space.toObject() : space;
+    const bookedUntil = bookedUntilBySpace.get(plain._id.toString()) || null;
+    return { ...plain, availableNow: !bookedUntil, bookedUntil };
+  });
+};
 
 // @route   GET /api/spaces
 // @desc    List spaces with search, filtering, and sorting
@@ -31,7 +55,8 @@ router.get("/", async (req, res) => {
     if (sort === "newest") sortOption = { createdAt: -1 };
 
     const spaces = await Space.find(query).sort(sortOption);
-    res.json(spaces);
+    const withAvailability = await attachAvailability(spaces);
+    res.json(withAvailability);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -42,7 +67,8 @@ router.get("/:id", async (req, res) => {
   try {
     const space = await Space.findById(req.params.id);
     if (!space) return res.status(404).json({ message: "Space not found" });
-    res.json(space);
+    const [withAvailability] = await attachAvailability([space]);
+    res.json(withAvailability);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

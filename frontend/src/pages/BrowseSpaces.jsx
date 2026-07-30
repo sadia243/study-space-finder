@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { SearchX } from "lucide-react";
 import api from "../api/client.js";
 import SpaceCard from "../components/SpaceCard.jsx";
+import SkeletonCard from "../components/SkeletonCard.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 import BookingModal from "../components/BookingModal.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 import { useNavigate } from "react-router-dom";
 
 export default function BrowseSpaces() {
@@ -13,9 +17,9 @@ export default function BrowseSpaces() {
   const [minCapacity, setMinCapacity] = useState("");
   const [sort, setSort] = useState("");
   const [selectedSpace, setSelectedSpace] = useState(null);
-  const [confirmation, setConfirmation] = useState("");
 
   const { user } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const fetchSpaces = useCallback(async () => {
@@ -30,11 +34,11 @@ export default function BrowseSpaces() {
       const { data } = await api.get("/spaces", { params });
       setSpaces(data);
     } catch (err) {
-      console.error(err);
+      showToast("Couldn't load spaces. Check your connection and try again.", "error");
     } finally {
       setLoading(false);
     }
-  }, [search, type, minCapacity, sort]);
+  }, [search, type, minCapacity, sort, showToast]);
 
   useEffect(() => {
     const timeout = setTimeout(fetchSpaces, 300); // debounce search input
@@ -51,20 +55,23 @@ export default function BrowseSpaces() {
 
   const handleBooked = () => {
     setSelectedSpace(null);
-    setConfirmation("Space booked. Check My Bookings for details.");
-    setTimeout(() => setConfirmation(""), 4000);
+    showToast("Space booked. Check My Bookings for details.");
+    fetchSpaces(); // refresh availability badges
   };
+
+  const clearFilters = () => {
+    setSearch("");
+    setType("");
+    setMinCapacity("");
+    setSort("");
+  };
+
+  const hasActiveFilters = search || type || minCapacity || sort;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="font-serif text-3xl mb-1">Find a study space</h1>
       <p className="text-ink/60 mb-6">Search, filter, and book a space across all library buildings.</p>
-
-      {confirmation && (
-        <div className="bg-forest-50 text-forest-600 text-sm px-4 py-2 rounded mb-4">
-          {confirmation}
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-3 mb-6">
         <input
@@ -106,9 +113,19 @@ export default function BrowseSpaces() {
       </div>
 
       {loading ? (
-        <p className="text-ink/60">Loading spaces...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       ) : spaces.length === 0 ? (
-        <p className="text-ink/60">No spaces match your search. Try different filters.</p>
+        <EmptyState
+          icon={SearchX}
+          title="No spaces match your search"
+          description="Try a different keyword, or clear your filters to see everything available."
+          actionLabel={hasActiveFilters ? "Clear filters" : undefined}
+          onAction={hasActiveFilters ? clearFilters : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {spaces.map((space) => (

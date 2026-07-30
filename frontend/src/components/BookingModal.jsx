@@ -11,6 +11,17 @@ export default function BookingModal({ space, onClose, onBooked }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (startTime >= endTime) {
+      setError("End time must be after start time.");
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (date < todayStr) {
+      setError("You can't book a date in the past.");
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post("/bookings", { space: space._id, date, startTime, endTime });
@@ -37,6 +48,7 @@ export default function BookingModal({ space, onClose, onBooked }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              min={new Date().toISOString().slice(0, 10)}
               required
               className="mt-1 w-full border border-forest-100 rounded px-3 py-2"
             />

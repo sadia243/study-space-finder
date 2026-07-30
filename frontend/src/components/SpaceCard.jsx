@@ -1,9 +1,11 @@
 import { typeLabel } from "../utils/labels.js";
 
 export default function SpaceCard({ space, onBook }) {
+  const isAvailable = space.availableNow !== false; // treat undefined as available
+
   return (
     <div className="bg-white border border-forest-100 rounded-lg p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-serif text-lg text-ink">{space.name}</h3>
           <p className="text-sm text-ink/60">
@@ -12,6 +14,18 @@ export default function SpaceCard({ space, onBook }) {
         </div>
         <span className="text-xs bg-forest-50 text-forest-600 px-2 py-1 rounded-full font-medium whitespace-nowrap">
           {typeLabel(space.type)}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`inline-block w-2 h-2 rounded-full ${
+            isAvailable ? "bg-forest-500" : "bg-brass-500"
+          }`}
+          aria-hidden="true"
+        />
+        <span className={`text-xs font-medium ${isAvailable ? "text-forest-600" : "text-brass-600"}`}>
+          {isAvailable ? "Available now" : `Booked until ${space.bookedUntil}`}
         </span>
       </div>
 
