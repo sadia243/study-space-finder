@@ -44,8 +44,20 @@ MongoDB  →  users, spaces, bookings collections
   capacity, sort by name, capacity, or newest.
 - **Booking with conflict detection** — the API rejects a booking if the same space is already
   booked for an overlapping time slot.
-- **Admin dashboard** — full CRUD for spaces, plus reporting: total bookings, active spaces,
-  unique students who've booked, and a bar chart of the most-booked spaces.
+- **Real-time availability** — every space shows "Available now" or "Booked until HH:MM",
+  computed server-side against the current date and time.
+- **Admin dashboard** — full CRUD for spaces, a full booking history table (with the ability to
+  cancel any booking), and reporting: total bookings, active spaces, unique students who've
+  booked, and a bar chart of the most-booked spaces.
+
+## UX polish
+
+- Toast notifications for every create/update/delete/booking/cancel action (success and error)
+- Skeleton loading states instead of plain "Loading..." text
+- Friendly empty states with a call-to-action (e.g. "No bookings yet → Browse spaces")
+- Responsive navbar with a mobile hamburger menu
+- Client-side form validation (booking times, matching passwords on sign-up) before hitting the API
+- A styled 404 page for unmatched routes
 
 ## Project structure
 
